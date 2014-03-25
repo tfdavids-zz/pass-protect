@@ -8,8 +8,6 @@ password <name>
 # -c Require a capital letter
 # -s Require a symbol
 
-# If the password exists and does not satisfy any of these, a confirmation message will appear to modify the password to something satisfying these requirements
-
 # Change a password
 password -m <name>
 
@@ -31,4 +29,4 @@ Attacks:
 - If an attacker steals the master password, they need to guess each salt to gain access to that service
 - If an attacker recovers the plaintext of one password, they need to break SHA256 to get anything out of it
 
-Database is encrypted with a different password?
+Database will eventually be encrypted with a different password
