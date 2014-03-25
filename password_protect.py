@@ -2,94 +2,95 @@ import os
 import sys
 import string
 import getopt
+import sqlite3
+import argparse
+import getpass
+import hashlib
+from datetime import datetime
 
 FILE_PATH = "/Users/tdavids/Development/PassProtect/"
+conn = sqlite3.connect("salts.db")
+character_set = string.ascii_letters + string.digits + '+$'
 
-def create_password(length=16, leading_letter=False, caps=False, symbol=False):
-    characters = string.ascii_letters + string.digits + '+$'
-    bytestring = os.urandom(int(length))
-    hex_string = "".join([characters[ord(c) % 64] for c in bytestring])
-    if leading_letter:
-        hex_string = 'a' + hex_string[1:]
-    if caps:
-        hex_string = 'A' + hex_string[1:]
-    if symbol:
-        hex_string = hex_string[:-1] + '$'
-    return hex_string
+def initialize_db():
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS t
+                 (account text, username text, salt text, modified text)''')
 
-def store_password(name, password):
-    with open(FILE_PATH + ".passwords.txt", 'a') as password_file:
-        password_file.write("%s: %s\n" % (name, password));
+def create_salt(length=16):
+    return "".join([character_set[ord(c) % 64] for c in os.urandom(int(length))])
 
-def retrieve_passwords(name, master_password):
-    results = []
-    with open(FILE_PATH + ".passwords.txt", 'r') as password_file:
-        for line in password_file:
-            if name.lower() in line.lower():
-                results.append(line.strip())
-    return results
+def store_salt(name, username, salt):
+    c = conn.cursor()
+    time = str(datetime.now())
+    entry = (name, username, salt, time)
 
-def prompt_options():
-    print "Welcome to PassProtect!"
-    print "Please enter the number of your option:"
-    print "(1) Create a new password."
-    print "(2) Retrieve an existing password."
-    print "(3) Modify or delete an existing password."
-    try:
-        choice = int(sys.stdin.readline().strip())
-    except KeyboardInterrupt:
-        print "\nExiting . . ."
-        sys.exit(0)
-    if choice == 1:
-        create_password()
-    elif choice == 2:
-        get_password()
-    elif choice == 3:
-        modify_or_delete_password()
+    c.execute("INSERT INTO t VALUES (?,?,?,?)", entry)
+    conn.commit()
+
+def get_password(name, master_password):
+    c = conn.cursor()
+    t = (name, )
+    c.execute('SELECT salt, username FROM t WHERE account=?', t)
+    (salt, username) = c.fetchone()
+    return (name, username, ''.join([character_set[ord(c) % 64] for c in hashlib.sha256(salt + '--' + master_password).digest()]))
+
+def delete_password(name):
+    c = conn.cursor()
+    t = (name, )
+    c.execute('DELETE FROM t WHERE account LIKE ?', t)
+    conn.commit()
+
+def show_passwords(name):
+    c = conn.cursor()
+    t = ('%' + name + '%', )
+    for row in c.execute('SELECT * FROM t WHERE account LIKE ?', t):
+        print "%s (username: %s)" % (row[0], row[1])
+
+def create_password(name, username=None):
+    c = conn.cursor()
+    salt = create_salt()
+    if not username:
+        username = 'tdavids'
+    store_salt(name, username, salt)
+
+def print_password(name, master_password):
+    (account, username, password) = get_password(name, master_password)
+    print "Password for %s" % account
+    print "Username: %s" % username
+    print "Password: %s" % password
+
+def password_exists(name):
+    c = conn.cursor()
+    t = ('%' + name + '%', )
+    c.execute('SELECT account FROM t WHERE account LIKE ?', t)
+    if c.fetchone():
+        return True
+    else:
+        return False
 
 if __name__ == "__main__":
-    print "Welcome to PassProtect!"
-    print "Please enter the name of the password you would like to create or retrieve:"
-    name = sys.stdin.readline().strip()
+    initialize_db()
 
-    results = retrieve_passwords(name)
-    if len(results) == 0:
-        print "No passwords found."
-        print "Create password? Press enter to create password named \"%s\", or Ctrl-C to exit." % name
-        print "Optional: to specify options on the password, please type any of the following letters before pressing enter."
-        print "'l' if the password must begin with a letter"
-        print "'c' if the password must contain a capital letter"
-        print "'s' if the password must contain a symbol"
-        try:
-            options = sys.stdin.readline()
-        except KeyboardInterrupt:
-            print "\nExiting . . ."
-            sys.exit(0)
-        leading_letter = 'l' in options
-        caps = 'c' in options
-        symbol = 's' in options
-        password = create_password(leading_letter = leading_letter, caps = caps, symbol = symbol)
-        store_password(name, password)
-        print "Password successfully created!"
-        print "Password for %s is: %s" % (name.strip(), password.strip())
-    elif len(results) == 1:
-        line = results[0].split(':')
-        name, password = line[0], line[1]
-    
-        print "Password found!"
-        print "Password for %s is: %s" % (name.strip(), password.strip())
-    else: # len(results) > 1
-        print "Multiple passwords found! Please enter the number corresponding to the desired result:"
-        for idx, line in enumerate(results):
-            full_name = line.split(':')[0].strip()
-            print "(%d) %s" % (idx+1, full_name)
-        try:
-            choice = int(sys.stdin.readline().strip())
-        except KeyboardInterrupt:
-            print "\nExiting . . ."
-            sys.exit(0)
-        line = results[choice-1].split(':')
-        name, password = line[0], line[1]
-    
-        print "Password for %s is: %s" % (name.strip(), password.strip())
+    parser = argparse.ArgumentParser(description='texty text')
+    parser.add_argument('name')
+    parser.add_argument('-n', '--length', type=int)
+    parser.add_argument('-u', '--update', action='store_true')
+    parser.add_argument('-d', '--delete', action='store_true')
+    parser.add_argument('-l', '--list', dest='lists', action='store_true')
+    args = parser.parse_args()
 
+    master_password = getpass.getpass("Please enter your master password: ")
+
+    if args.delete:
+        delete_password(args.name)
+    elif args.lists:
+        show_passwords(args.name)
+    elif args.update:
+        delete_password(args.name)
+        create_password(args.name)
+        print_password(args.name, master_password)
+    else:
+        if not password_exists(args.name):
+            create_password(args.name)
+        print_password(args.name, master_password)
