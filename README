@@ -3,12 +3,10 @@ Usage:
 password <name>
 
 # Optional flags:
-# -n <n> Require the password to have length n
-# -a Require a leading letter
-# -c Require a capital letter
-# -s Require a symbol
+# -n <n> Require the password to have a certain length
+# -u <username> Associate the password with the given username
 
-# Change a password
+# Modify a password
 password -m <name>
 
 # Delete a password
