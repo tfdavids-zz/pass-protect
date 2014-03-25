@@ -50,14 +50,12 @@ def show_passwords(name):
 def create_password(name, username=None):
     c = conn.cursor()
     salt = create_salt()
-    if not username:
-        username = 'tdavids'
     store_salt(name, username, salt)
 
 def print_password(name, master_password):
     (account, username, password) = get_password(name, master_password)
     print "Password for %s" % account
-    print "Username: %s" % username
+    # print "Username: %s" % username
     print "Password: %s" % password
 
 def password_exists(name):
