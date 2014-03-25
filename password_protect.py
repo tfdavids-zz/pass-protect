@@ -8,7 +8,6 @@ import getpass
 import hashlib
 from datetime import datetime
 
-FILE_PATH = "/Users/tdavids/Development/PassProtect/"
 conn = sqlite3.connect("salts.db")
 character_set = string.ascii_letters + string.digits + '+$'
 
