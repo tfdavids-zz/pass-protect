@@ -1,0 +1,34 @@
+Usage:
+# Retrieve or create a password
+password <name>
+
+# Optional flags:
+# -n <n> Require the password to have length n
+# -a Require a leading letter
+# -c Require a capital letter
+# -s Require a symbol
+
+# If the password exists and does not satisfy any of these, a confirmation message will appear to modify the password to something satisfying these requirements
+
+# Change a password
+password -m <name>
+
+# Delete a password
+password -d <name>
+
+# Show accounts matching <name>
+password -l <name>
+
+===================================
+
+Approach:
+- Database containing names of sites, username (for convenience), and individual salts
+- Master password which is never stored
+- Site passwords are created from salts and master password
+
+Attacks:
+- If an attacker steals the database, all they have to do is guess the master password to gain access to everything
+- If an attacker steals the master password, they need to guess each salt to gain access to that service
+- If an attacker recovers the plaintext of one password, they need to break SHA256 to get anything out of it
+
+Database is encrypted with a different password?
