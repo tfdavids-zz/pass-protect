@@ -1,11 +1,14 @@
 import os
 import sys
+import string
+import getopt
 
-FILE_PATH = "/Users/tdavids/Development/PasswordProtect/"
+FILE_PATH = "/Users/tdavids/Development/PassProtect/"
 
 def create_password(length=16, leading_letter=False, caps=False, symbol=False):
-    bytestring = os.urandom(int(length/2))
-    hex_string = "".join([format(ord(c), 'x') for c in bytestring])
+    characters = string.ascii_letters + string.digits + '+$'
+    bytestring = os.urandom(int(length))
+    hex_string = "".join([characters[ord(c) % 64] for c in bytestring])
     if leading_letter:
         hex_string = 'a' + hex_string[1:]
     if caps:
@@ -18,7 +21,7 @@ def store_password(name, password):
     with open(FILE_PATH + ".passwords.txt", 'a') as password_file:
         password_file.write("%s: %s\n" % (name, password));
 
-def retrieve_passwords(name):
+def retrieve_passwords(name, master_password):
     results = []
     with open(FILE_PATH + ".passwords.txt", 'r') as password_file:
         for line in password_file:
@@ -26,8 +29,26 @@ def retrieve_passwords(name):
                 results.append(line.strip())
     return results
 
+def prompt_options():
+    print "Welcome to PassProtect!"
+    print "Please enter the number of your option:"
+    print "(1) Create a new password."
+    print "(2) Retrieve an existing password."
+    print "(3) Modify or delete an existing password."
+    try:
+        choice = int(sys.stdin.readline().strip())
+    except KeyboardInterrupt:
+        print "\nExiting . . ."
+        sys.exit(0)
+    if choice == 1:
+        create_password()
+    elif choice == 2:
+        get_password()
+    elif choice == 3:
+        modify_or_delete_password()
+
 if __name__ == "__main__":
-    print "Welcome to PasswordProtect!"
+    print "Welcome to PassProtect!"
     print "Please enter the name of the password you would like to create or retrieve:"
     name = sys.stdin.readline().strip()
 
@@ -44,9 +65,6 @@ if __name__ == "__main__":
         except KeyboardInterrupt:
             print "\nExiting . . ."
             sys.exit(0)
-        # leading_letter = options.find('l') != -1
-        # caps = options.find('c') != -1
-        # symbol = options.find('s') != -1
         leading_letter = 'l' in options
         caps = 'c' in options
         symbol = 's' in options
@@ -60,12 +78,16 @@ if __name__ == "__main__":
     
         print "Password found!"
         print "Password for %s is: %s" % (name.strip(), password.strip())
-    else:
+    else: # len(results) > 1
         print "Multiple passwords found! Please enter the number corresponding to the desired result:"
         for idx, line in enumerate(results):
             full_name = line.split(':')[0].strip()
             print "(%d) %s" % (idx+1, full_name)
-        choice = int(sys.stdin.readline().strip())
+        try:
+            choice = int(sys.stdin.readline().strip())
+        except KeyboardInterrupt:
+            print "\nExiting . . ."
+            sys.exit(0)
         line = results[choice-1].split(':')
         name, password = line[0], line[1]
     
