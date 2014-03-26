@@ -90,6 +90,7 @@ if __name__ == "__main__":
             print "Are you sure you want to delete your password named \"%s\"? This can't be undone! Press Enter to continue, or Ctrl-C to exit." % args.name
             sys.stdin.readline()
         except KeyboardInterrupt:
+            conn.close()
             sys.exit(0)
         delete_password(args.name)
 
@@ -101,12 +102,14 @@ if __name__ == "__main__":
     elif args.modify:
         if not password_exists(args.name, args.username):
             print "Error: couldn't find a password named \"%s\". No action was taken." % args.name
+            conn.close()
             sys.exit(0)
         else:
             try:
                 print "Are you sure you want to create a new password for \"%s\"? This can't be undone! Press Enter to continue, or Ctrl-C to exit." % args.name
                 sys.stdin.readline()
             except KeyboardInterrupt:
+                conn.close()
                 sys.exit(0)
         delete_password(args.name)
         create_password(args.name)
@@ -120,6 +123,7 @@ if __name__ == "__main__":
                 print "No password found. To create a password named \"%s\", type a username (optional), and then press enter." % args.name
                 sys.stdin.readline()
             except KeyboardInterrupt:
+                conn.close()
                 sys.exit(0)
             if args.length:
                 create_password(args.name, args.username, args.length)
@@ -127,3 +131,4 @@ if __name__ == "__main__":
                 create_password(args.name, args.username)
         master_password = getpass.getpass("Please enter your master password: ")
         print_password(args.name, master_password)
+    conn.close()

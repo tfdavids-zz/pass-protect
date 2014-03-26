@@ -18,7 +18,7 @@ password -l <name>
 ===================================
 
 Approach:
-- Database containing names of sites, username (for convenience), and individual salts
+- Database containing names of sites, username, and individual salts
 - Master password which is never stored
 - Site passwords are created from salts and master password
 
