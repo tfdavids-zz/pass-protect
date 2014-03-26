@@ -34,10 +34,12 @@ def get_password(name, master_password):
     (salt, username, length) = c.fetchone()
     return (name, username, ''.join([character_set[ord(c) % 64] for c in hashlib.sha256(salt + '--' + master_password).digest()])[:length] )
 
-def delete_password(name):
+def delete_password(name, username):
     c = conn.cursor()
-    t = (name, )
-    c.execute('DELETE FROM t WHERE account LIKE ?', t)
+    if not username:
+        username = 'NULL'
+    t = ('%' + name + '%', username)
+    c.execute('DELETE FROM t WHERE account LIKE ? AND username = ?', t)
     conn.commit()
 
 def show_passwords(name):
@@ -111,7 +113,7 @@ if __name__ == "__main__":
             except KeyboardInterrupt:
                 conn.close()
                 sys.exit(0)
-        delete_password(args.name)
+        delete_password(args.name, args.username)
         create_password(args.name)
         master_password = getpass.getpass("Please enter your master password: ")
         print_password(args.name, master_password)
@@ -120,7 +122,10 @@ if __name__ == "__main__":
     else:
         if not password_exists(args.name, args.username):
             try:
-                print "No password found. To create a password named \"%s\", type a username (optional), and then press enter." % args.name
+                if not args.username:
+                    print "No password found. To create a password named \"%s\", press enter." % args.name
+                else:
+                    print "No password found. To create a password named \"%s\" with username \"%s\", press enter." % (args.name, args.username)
                 sys.stdin.readline()
             except KeyboardInterrupt:
                 conn.close()
