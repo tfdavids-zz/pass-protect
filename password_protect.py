@@ -75,7 +75,7 @@ def password_exists(name, username):
 if __name__ == "__main__":
     initialize_db()
 
-    parser = argparse.ArgumentParser(description='texty text')
+    parser = argparse.ArgumentParser(description='Manage stored password salts')
     parser.add_argument('name')
     parser.add_argument('-n', '--length', type=int)
     parser.add_argument('-u', '--username')
