@@ -8,7 +8,7 @@ import getpass
 import hashlib
 from datetime import datetime
 
-conn = sqlite3.connect("salts.db")
+conn = sqlite3.connect(".salts.db")
 character_set = string.ascii_letters + string.digits + '+$'
 
 def initialize_db():
